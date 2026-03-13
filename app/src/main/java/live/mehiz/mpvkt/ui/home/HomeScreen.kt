@@ -118,6 +118,10 @@ import live.mehiz.mpvkt.ui.preferences.PreferencesScreen
 import live.mehiz.mpvkt.ui.theme.spacing
 import live.mehiz.mpvkt.ui.utils.LocalBackStack
 import org.koin.compose.viewmodel.koinViewModel
+import coil3.asImage
+import okio.Path.Companion.toOkioPath
+import okio.source
+import okio.buffer
 
 private fun formatDuration(ms: Long): String {
   val totalSeconds = ms / 1000
@@ -161,9 +165,23 @@ object HomeScreen : Screen {
     
     val imageLoader = androidx.compose.runtime.remember {
       coil3.ImageLoader.Builder(context)
-        .components { add(coil3.video.VideoFrameDecoder.Factory()) }
+        .components {
+          add(VideoThumbnailFetcher.Factory())
+          add(coil3.video.VideoFrameDecoder.Factory())
+        }
         .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
         .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
+        .memoryCache {
+          coil3.memory.MemoryCache.Builder()
+            .maxSizePercent(context, 0.25)
+            .build()
+        }
+        .diskCache {
+          coil3.disk.DiskCache.Builder()
+            .directory(context.cacheDir.resolve("video_thumbs").toOkioPath())
+            .maxSizePercent(0.02)
+            .build()
+        }
         .build()
     }
     val mediaItems by viewModel.mediaItems.collectAsState()
@@ -182,6 +200,9 @@ object HomeScreen : Screen {
     var showFabMenu by remember { mutableStateOf(false) }
     var itemsToDelete by remember { mutableStateOf<List<MediaItem>?>(null) }
     var itemToRename by remember { mutableStateOf<MediaItem?>(null) }
+
+    val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
     val permissionLauncher = rememberLauncherForActivityResult(
       ActivityResultContracts.RequestPermission(),
@@ -438,6 +459,7 @@ object HomeScreen : Screen {
       } else {
         if (isGridView) {
           LazyVerticalGrid(
+            state = gridState,
             columns = GridCells.Adaptive(160.dp),
             modifier = Modifier
               .fillMaxSize()
@@ -445,7 +467,7 @@ object HomeScreen : Screen {
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
           ) {
-            items(mediaItems, key = { it.id }) { item ->
+            items(mediaItems, key = { it.id }, contentType = { "media_item" }) { item ->
               MediaGridItem(
                 item = item,
                 imageLoader = imageLoader,
@@ -465,11 +487,12 @@ object HomeScreen : Screen {
           }
         } else {
           LazyColumn(
+            state = listState,
             modifier = Modifier
               .fillMaxSize()
               .padding(padding),
           ) {
-            items(mediaItems, key = { it.id }) { item ->
+            items(mediaItems, key = { it.id }, contentType = { "media_item" }) { item ->
               MediaListItem(
                 item = item,
                 imageLoader = imageLoader,
@@ -712,13 +735,19 @@ private fun MediaGridItem(
         )
         AsyncImage(
           model = coil3.request.ImageRequest.Builder(context)
-            .data(android.net.Uri.fromFile(java.io.File(item.filePath)))
+            .data(ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, item.id))
+            .memoryCacheKey("vthumb_${item.id}")
+            .diskCacheKey("vthumb_${item.id}")
+            .size(320, 240)
+            .scale(coil3.size.Scale.FILL)
             .crossfade(true)
             .build(),
           imageLoader = imageLoader,
           contentDescription = item.displayName,
           modifier = Modifier.matchParentSize(),
           contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+          error = painterResource(R.drawable.ic_launcher_foreground),
+          placeholder = painterResource(R.drawable.ic_launcher_foreground)
         )
         // Duration badge
         Box(
@@ -832,13 +861,19 @@ private fun MediaListItem(
       )
       AsyncImage(
         model = coil3.request.ImageRequest.Builder(context)
-          .data(android.net.Uri.fromFile(java.io.File(item.filePath)))
+          .data(ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, item.id))
+          .memoryCacheKey("vthumb_${item.id}")
+          .diskCacheKey("vthumb_${item.id}")
+          .size(320, 240)
+          .scale(coil3.size.Scale.FILL)
           .crossfade(true)
           .build(),
         imageLoader = imageLoader,
         contentDescription = item.displayName,
         modifier = Modifier.matchParentSize(),
         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+        error = painterResource(R.drawable.ic_launcher_foreground),
+        placeholder = painterResource(R.drawable.ic_launcher_foreground)
       )
     }
     Column(modifier = Modifier.weight(1f)) {
@@ -944,6 +979,74 @@ private fun EmptyState(modifier: Modifier = Modifier) {
       style = MaterialTheme.typography.bodyMedium,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+  }
+}
+
+class VideoThumbnailFetcher(
+  private val data: android.net.Uri,
+  private val options: coil3.request.Options
+) : coil3.fetch.Fetcher {
+
+  override suspend fun fetch(): coil3.fetch.FetchResult? {
+    val mediaId = android.content.ContentUris.parseId(data)
+    val context = options.context
+
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+      try {
+        val bmp = context.contentResolver.loadThumbnail(
+          data,
+          android.util.Size(512, 384),
+          null
+        )
+        return coil3.fetch.ImageFetchResult(
+          image = bmp.asImage(),
+          isSampled = true,
+          dataSource = coil3.decode.DataSource.DISK
+        )
+      } catch (_: Exception) { /* fall through */ }
+    } else {
+      @Suppress("DEPRECATION")
+      val bmp = android.provider.MediaStore.Video.Thumbnails.getThumbnail(
+        context.contentResolver,
+        mediaId,
+        android.provider.MediaStore.Video.Thumbnails.MINI_KIND,
+        null
+      )
+      if (bmp != null) {
+        return coil3.fetch.ImageFetchResult(
+          image = bmp.asImage(),
+          isSampled = true,
+          dataSource = coil3.decode.DataSource.DISK
+        )
+      }
+    }
+
+    val afd = context.contentResolver.openAssetFileDescriptor(data, "r")
+      ?: throw java.io.IOException("Cannot open: $data")
+    
+    val source = afd.createInputStream().source().buffer()
+    val imageSource = coil3.decode.ImageSource(
+      source = source,
+      fileSystem = okio.FileSystem.SYSTEM
+    )
+    return coil3.fetch.SourceFetchResult(
+      source = imageSource,
+      mimeType = context.contentResolver.getType(data),
+      dataSource = coil3.decode.DataSource.DISK
+    )
+  }
+
+  class Factory : coil3.fetch.Fetcher.Factory<android.net.Uri> {
+    override fun create(
+      data: android.net.Uri, 
+      options: coil3.request.Options, 
+      imageLoader: coil3.ImageLoader
+    ): coil3.fetch.Fetcher? {
+      if (!data.toString().startsWith(
+        android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI.toString()
+      )) return null
+      return VideoThumbnailFetcher(data, options)
+    }
   }
 }
 
