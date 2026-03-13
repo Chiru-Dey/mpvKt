@@ -13,16 +13,24 @@ import kotlinx.coroutines.launch
 import live.mehiz.mpvkt.R
 import live.mehiz.mpvkt.domain.mediabrowser.MediaItem
 import live.mehiz.mpvkt.domain.mediabrowser.MediaRepository
+import live.mehiz.mpvkt.preferences.preference.PreferenceStore
+import live.mehiz.mpvkt.preferences.preference.getEnum
 
 enum class SortOption(@StringRes val titleRes: Int) {
-  NAME(R.string.home_sort_name),
-  DATE(R.string.home_sort_date),
+  TITLE(R.string.home_sort_title),
+  DATE_ADDED(R.string.home_sort_date_added),
+  DATE_MODIFIED(R.string.home_sort_date_modified),
+  PLAYED_TIME(R.string.home_sort_played_time),
   DURATION(R.string.home_sort_duration),
   SIZE(R.string.home_sort_size),
+  RESOLUTION(R.string.home_sort_resolution),
+  PATH(R.string.home_sort_path),
+  FILE_TYPE(R.string.home_sort_file_type)
 }
 
 class HomeViewModel(
   private val mediaRepository: MediaRepository,
+  private val preferenceStore: PreferenceStore,
 ) : ViewModel() {
 
   private val _allMedia = MutableStateFlow<List<MediaItem>>(emptyList())
@@ -30,8 +38,8 @@ class HomeViewModel(
   private val _searchQuery = MutableStateFlow("")
   val searchQuery = _searchQuery.asStateFlow()
 
-  private val _sortOption = MutableStateFlow(SortOption.DATE)
-  val sortOption = _sortOption.asStateFlow()
+  val sortOption = preferenceStore.getEnum("home_sort_option", SortOption.TITLE)
+  val sortAscending = preferenceStore.getBoolean("home_sort_ascending", true)
 
   private val _isGridView = MutableStateFlow(true)
   val isGridView = _isGridView.asStateFlow()
@@ -42,7 +50,12 @@ class HomeViewModel(
   private val _isLoading = MutableStateFlow(true)
   val isLoading = _isLoading.asStateFlow()
 
-  val mediaItems = combine(_allMedia, _searchQuery, _sortOption) { items, query, sort ->
+  val mediaItems = combine(
+    _allMedia,
+    _searchQuery,
+    sortOption.changes(),
+    sortAscending.changes(),
+  ) { items, query, sort, ascending ->
     val filtered = if (query.isBlank()) {
       items
     } else {
@@ -51,12 +64,20 @@ class HomeViewModel(
           it.folderName?.contains(query, ignoreCase = true) == true
       }
     }
-    when (sort) {
-      SortOption.NAME -> filtered.sortedBy { it.displayName.lowercase() }
-      SortOption.DATE -> filtered.sortedByDescending { it.dateModified }
-      SortOption.DURATION -> filtered.sortedByDescending { it.duration }
-      SortOption.SIZE -> filtered.sortedByDescending { it.size }
+    
+    val sorted = when (sort) {
+      SortOption.TITLE -> filtered.sortedBy { it.displayName.lowercase() }
+      SortOption.DATE_ADDED -> filtered.sortedBy { it.dateAdded }
+      SortOption.DATE_MODIFIED -> filtered.sortedBy { it.dateModified }
+      SortOption.PLAYED_TIME -> filtered.sortedBy { it.lastPlayedAt }
+      SortOption.DURATION -> filtered.sortedBy { it.duration }
+      SortOption.SIZE -> filtered.sortedBy { it.size }
+      SortOption.RESOLUTION -> filtered.sortedBy { it.width * it.height }
+      SortOption.PATH -> filtered.sortedBy { it.folderName?.lowercase() ?: "" }
+      SortOption.FILE_TYPE -> filtered.sortedBy { it.displayName.substringAfterLast('.', "").lowercase() }
     }
+    
+    if (ascending) sorted else sorted.reversed()
   }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
   val isSelectionMode = combine(_selectedItems) { (selected) ->
@@ -80,7 +101,17 @@ class HomeViewModel(
   }
 
   fun setSortOption(sort: SortOption) {
-    _sortOption.update { sort }
+    if (sortOption.get() == sort) {
+      sortAscending.set(!sortAscending.get())
+    } else {
+      sortOption.set(sort)
+      sortAscending.set(true)
+    }
+  }
+
+  fun updateLastPlayed(id: Long) {
+    preferenceStore.getLong("last_played_$id", 0L).set(System.currentTimeMillis())
+    loadMedia() // refresh the list so Played Time sort updates
   }
 
   fun toggleGridView() {

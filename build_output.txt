@@ -1,0 +1,124 @@
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:dataBindingMergeDependencyArtifactsDebug UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:prepareLibraryDefinitionsDebug UP-TO-DATE
+> Task :app:extractDebugSupportedLocales UP-TO-DATE
+> Task :app:generateDebugLocaleConfig UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesDebug UP-TO-DATE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:kspDebugKotlin UP-TO-DATE
+> Task :app:copyRoomSchemas NO-SOURCE
+
+> Task :app:compileDebugKotlin FAILED
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:149:21 Unresolved reference 'koinInject'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:158:20 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:158:23 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:158:44 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:159:19 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:159:22 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:159:42 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:160:21 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:160:24 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:160:46 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:161:20 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:161:23 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:161:44 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:162:23 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:162:26 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:162:50 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:163:20 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:163:23 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:163:44 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:164:23 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:164:26 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:164:50 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:165:25 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:165:28 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:165:54 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:190:87 Function invocation 'size(...)' expected.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:212:35 @Composable invocations can only happen from the context of a @Composable function
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:212:40 @Composable invocations can only happen from the context of a @Composable function
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:216:23 @Composable invocations can only happen from the context of a @Composable function
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:251:57 Unresolved reference 'not' for operator '!'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:257:72 Unresolved reference 'CircleShape'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:289:18 Unresolved reference 'navigationBarsPadding'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:292:78 Unresolved reference 'it'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:294:38 Unresolved reference 'PlayArrow'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:299:39 Function invocation 'size(...)' expected.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:300:72 Unresolved reference 'id'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:301:54 Unresolved reference 'uri'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:304:81 Unresolved reference 'it'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:318:52 Unresolved reference 'it'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:326:38 Unresolved reference 'Edit'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:328:41 Function invocation 'size(...)' expected.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:334:38 Unresolved reference 'Delete'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:346:13 Unresolved reference 'not' for operator '!'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:435:42 Unresolved reference 'id'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:437:24 Argument type mismatch: actual type is 'Int', but 'MediaItem' was expected.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:439:58 Unresolved reference 'id'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:443:52 Unresolved reference 'id'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:445:53 Unresolved reference 'id'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:446:35 Unresolved reference 'uri'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:449:64 Unresolved reference 'id'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:459:42 Unresolved reference 'id'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:461:24 Argument type mismatch: actual type is 'Int', but 'MediaItem' was expected.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:463:58 Unresolved reference 'id'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:467:52 Unresolved reference 'id'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:469:53 Unresolved reference 'id'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:470:35 Unresolved reference 'uri'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:473:64 Unresolved reference 'id'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:509:20 Unresolved reference 'clickable'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:524:54 Unresolved reference 'ArrowUpward'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:524:85 Unresolved reference 'ArrowDownward'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:947:8 Unresolved reference 'clickable'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:949:8 Unresolved reference 'alpha'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeScreen.kt:953:80 Unresolved reference 'sp'.
+e: file:///D:/coding/mpvKt/app/src/main/java/live/mehiz/mpvkt/ui/home/HomeViewModel.kt:113:21 Unresolved reference 'setLong'.
+
+[Incubating] Problems report is available at: file:///D:/coding/mpvKt/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14.2/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 7s
+23 actionable tasks: 1 executed, 22 up-to-date

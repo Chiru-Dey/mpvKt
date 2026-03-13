@@ -16,6 +16,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,19 +36,25 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
@@ -86,6 +94,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -95,12 +104,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import `is`.xyz.mpv.Utils.PROTOCOLS
 import kotlinx.serialization.Serializable
 import live.mehiz.mpvkt.R
 import live.mehiz.mpvkt.domain.mediabrowser.MediaItem
+import live.mehiz.mpvkt.preferences.preference.collectAsState
 import live.mehiz.mpvkt.presentation.Screen
 import live.mehiz.mpvkt.ui.player.PlayerActivity
 import live.mehiz.mpvkt.ui.preferences.PreferencesScreen
@@ -144,13 +155,22 @@ object HomeScreen : Screen {
   @OptIn(ExperimentalMaterial3Api::class)
   @Composable
   override fun Content() {
-    val context = LocalContext.current
+    val context = android.content.ContextWrapper(androidx.compose.ui.platform.LocalContext.current)
     val backstack = LocalBackStack.current
     val viewModel = koinViewModel<HomeViewModel>()
+    
+    val imageLoader = androidx.compose.runtime.remember {
+      coil3.ImageLoader.Builder(context)
+        .components { add(coil3.video.VideoFrameDecoder.Factory()) }
+        .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
+        .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
+        .build()
+    }
     val mediaItems by viewModel.mediaItems.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val sortOption by viewModel.sortOption.collectAsState()
+    val sortAscending by viewModel.sortAscending.collectAsState()
     val isGridView by viewModel.isGridView.collectAsState()
     val selectedItems by viewModel.selectedItems.collectAsState()
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
@@ -160,6 +180,8 @@ object HomeScreen : Screen {
     var showSortMenu by remember { mutableStateOf(false) }
     var isSearchActive by remember { mutableStateOf(false) }
     var showFabMenu by remember { mutableStateOf(false) }
+    var itemsToDelete by remember { mutableStateOf<List<MediaItem>?>(null) }
+    var itemToRename by remember { mutableStateOf<MediaItem?>(null) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
       ActivityResultContracts.RequestPermission(),
@@ -171,6 +193,10 @@ object HomeScreen : Screen {
     LaunchedEffect(Unit) {
       if (hasPermission) viewModel.loadMedia()
     }
+
+    val topAppBarColors = TopAppBarDefaults.topAppBarColors(
+      containerColor = MaterialTheme.colorScheme.primaryContainer,
+    )
 
     Scaffold(
       topBar = {
@@ -186,22 +212,8 @@ object HomeScreen : Screen {
               IconButton(onClick = viewModel::selectAll) {
                 Icon(Icons.Default.SelectAll, null)
               }
-              IconButton(onClick = {
-                val shareIntent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                  type = "video/*"
-                  val uris = mediaItems.filter { selectedItems.contains(it.id) }
-                    .map { it.uri }
-                  putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
-                }
-                context.startActivity(Intent.createChooser(shareIntent, null))
-                viewModel.clearSelection()
-              }) {
-                Icon(Icons.Default.Share, null)
-              }
             },
-            colors = TopAppBarDefaults.topAppBarColors(
-              containerColor = MaterialTheme.colorScheme.primaryContainer,
-            ),
+            colors = topAppBarColors,
           )
         } else {
           TopAppBar(
@@ -249,24 +261,14 @@ object HomeScreen : Screen {
                   IconButton(onClick = { showSortMenu = true }) {
                     Icon(Icons.Default.Sort, null)
                   }
-                  DropdownMenu(
-                    expanded = showSortMenu,
-                    onDismissRequest = { showSortMenu = false },
-                  ) {
-                    SortOption.entries.forEach { option ->
-                      DropdownMenuItem(
-                        text = { Text(stringResource(option.titleRes)) },
-                        onClick = {
-                          viewModel.setSortOption(option)
-                          showSortMenu = false
-                        },
-                        leadingIcon = if (sortOption == option) {
-                          { Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary) }
-                        } else {
-                          null
-                        },
-                      )
-                    }
+                  if (sortOption != SortOption.TITLE || !sortAscending) {
+                    Box(
+                      modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(10.dp)
+                        .size(6.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    )
                   }
                 }
                 IconButton(onClick = viewModel::toggleGridView) {
@@ -281,6 +283,76 @@ object HomeScreen : Screen {
               }
             },
           )
+        }
+      },
+      bottomBar = {
+        androidx.compose.animation.AnimatedVisibility(
+          visible = isSelectionMode,
+          enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }),
+          exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it })
+        ) {
+          androidx.compose.material3.Surface(
+            tonalElevation = 3.dp,
+            color = MaterialTheme.colorScheme.surface
+          ) {
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = MaterialTheme.spacing.small, horizontal = MaterialTheme.spacing.medium)
+                .navigationBarsPadding(),
+              horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+              val selectedMedia = mediaItems.filter { selectedItems.contains(it.id) }
+              SelectionActionItem(
+                icon = Icons.Default.PlayArrow,
+                label = stringResource(R.string.home_action_play),
+                enabled = selectedMedia.isNotEmpty(),
+                onClick = {
+                  if (selectedMedia.isNotEmpty()) {
+                    if (selectedMedia.size == 1) {
+                      viewModel.updateLastPlayed(selectedMedia.first().id)
+                      playFile(selectedMedia.first().uri.toString(), context)
+                    } else {
+                      val tempPlaylist = java.io.File(context.cacheDir, "playlist.m3u")
+                      tempPlaylist.writeText(selectedMedia.joinToString("\n") { it.uri.toString() })
+                      playFile(tempPlaylist.absolutePath, context)
+                    }
+                    viewModel.clearSelection()
+                  }
+                }
+              )
+              SelectionActionItem(
+                icon = Icons.Default.Share,
+                label = stringResource(R.string.home_action_share),
+                enabled = selectedMedia.isNotEmpty(),
+                onClick = {
+                  val shareIntent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                    type = "video/*"
+                    val uris = selectedMedia.map { it.uri }
+                    putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+                  }
+                  context.startActivity(Intent.createChooser(shareIntent, null))
+                  viewModel.clearSelection()
+                }
+              )
+              SelectionActionItem(
+                icon = Icons.Default.Edit,
+                label = stringResource(R.string.home_action_rename),
+                enabled = selectedMedia.size == 1,
+                onClick = {
+                  itemToRename = selectedMedia.first()
+                }
+              )
+              SelectionActionItem(
+                icon = Icons.Default.Delete,
+                label = stringResource(R.string.home_action_delete),
+                enabled = selectedMedia.isNotEmpty(),
+                onClick = {
+                  itemsToDelete = selectedMedia
+                }
+              )
+            }
+          }
         }
       },
       floatingActionButton = {
@@ -376,12 +448,14 @@ object HomeScreen : Screen {
             items(mediaItems, key = { it.id }) { item ->
               MediaGridItem(
                 item = item,
+                imageLoader = imageLoader,
                 isSelected = selectedItems.contains(item.id),
                 isSelectionMode = isSelectionMode,
                 onClick = {
                   if (isSelectionMode) {
                     viewModel.toggleSelection(item.id)
                   } else {
+                    viewModel.updateLastPlayed(item.id)
                     playFile(item.uri.toString(), context)
                   }
                 },
@@ -398,12 +472,14 @@ object HomeScreen : Screen {
             items(mediaItems, key = { it.id }) { item ->
               MediaListItem(
                 item = item,
+                imageLoader = imageLoader,
                 isSelected = selectedItems.contains(item.id),
                 isSelectionMode = isSelectionMode,
                 onClick = {
                   if (isSelectionMode) {
                     viewModel.toggleSelection(item.id)
                   } else {
+                    viewModel.updateLastPlayed(item.id)
                     playFile(item.uri.toString(), context)
                   }
                 },
@@ -421,6 +497,115 @@ object HomeScreen : Screen {
             showUrlDialog = false
             playFile(url, context)
           },
+        )
+      }
+
+      if (showSortMenu) {
+        androidx.compose.material3.ModalBottomSheet(onDismissRequest = { showSortMenu = false }) {
+          Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.medium),
+            horizontalAlignment = Alignment.CenterHorizontally
+          ) {
+            Text(
+              stringResource(R.string.home_sort_by),
+              style = MaterialTheme.typography.labelMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier.padding(bottom = MaterialTheme.spacing.medium)
+            )
+            SortOption.entries.forEach { option ->
+              val isSelected = sortOption == option
+              Row(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .clip(RoundedCornerShape(8.dp))
+                  .background(if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+                  .clickable {
+                    viewModel.setSortOption(option)
+                    showSortMenu = false
+                  }
+                  .padding(MaterialTheme.spacing.medium),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+              ) {
+                Text(
+                  stringResource(option.titleRes),
+                  style = MaterialTheme.typography.bodyLarge,
+                  color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+                )
+                if (isSelected) {
+                  Icon(
+                    if (sortAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                  )
+                }
+              }
+            }
+            Spacer(Modifier.height(MaterialTheme.spacing.large))
+          }
+        }
+      }
+
+      if (itemsToDelete != null) {
+        val count = itemsToDelete!!.size
+        AlertDialog(
+          onDismissRequest = { itemsToDelete = null },
+          title = { Text(stringResource(R.string.home_delete_confirm_title)) },
+          text = { Text(stringResource(R.string.home_delete_confirm_body, count)) },
+          confirmButton = {
+            TextButton(onClick = {
+              itemsToDelete?.forEach { item ->
+                try {
+                  context.contentResolver.delete(item.uri, null, null)
+                } catch (e: Exception) {
+                  e.printStackTrace()
+                }
+              }
+              itemsToDelete = null
+              viewModel.clearSelection()
+              viewModel.loadMedia()
+            }) { Text(stringResource(R.string.home_action_delete), color = MaterialTheme.colorScheme.error) }
+          },
+          dismissButton = {
+            TextButton(onClick = { itemsToDelete = null }) { Text(stringResource(R.string.generic_cancel)) }
+          }
+        )
+      }
+
+      if (itemToRename != null) {
+        var newName by remember(itemToRename) { mutableStateOf(itemToRename!!.displayName.substringBeforeLast('.')) }
+        val extension = ".${itemToRename!!.displayName.substringAfterLast('.')}"
+        AlertDialog(
+          onDismissRequest = { itemToRename = null },
+          title = { Text(stringResource(R.string.home_action_rename)) },
+          text = {
+            OutlinedTextField(
+              value = newName,
+              onValueChange = { newName = it },
+              singleLine = true,
+              suffix = { Text(extension) }
+            )
+          },
+          confirmButton = {
+            TextButton(
+              enabled = newName.isNotBlank() && newName + extension != itemToRename!!.displayName,
+              onClick = {
+                val values = android.content.ContentValues().apply {
+                  put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, newName + extension)
+                }
+                try {
+                  context.contentResolver.update(itemToRename!!.uri, values, null, null)
+                } catch (e: Exception) {
+                  e.printStackTrace()
+                }
+                itemToRename = null
+                viewModel.clearSelection()
+                viewModel.loadMedia()
+            }) { Text(stringResource(R.string.home_action_rename)) }
+          },
+          dismissButton = {
+            TextButton(onClick = { itemToRename = null }) { Text(stringResource(R.string.generic_cancel)) }
+          }
         )
       }
     }
@@ -488,6 +673,7 @@ private fun UrlInputDialog(
 @Composable
 private fun MediaGridItem(
   item: MediaItem,
+  imageLoader: coil3.ImageLoader,
   isSelected: Boolean,
   isSelectionMode: Boolean,
   onClick: () -> Unit,
@@ -525,18 +711,14 @@ private fun MediaGridItem(
           tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
         )
         AsyncImage(
-          model = ImageRequest.Builder(context)
-            .data(
-              ContentUris.withAppendedId(
-                MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                item.id,
-              ),
-            )
+          model = coil3.request.ImageRequest.Builder(context)
+            .data(android.net.Uri.fromFile(java.io.File(item.filePath)))
             .crossfade(true)
             .build(),
+          imageLoader = imageLoader,
           contentDescription = item.displayName,
           modifier = Modifier.matchParentSize(),
-          contentScale = ContentScale.Crop,
+          contentScale = androidx.compose.ui.layout.ContentScale.Crop,
         )
         // Duration badge
         Box(
@@ -609,6 +791,7 @@ private fun MediaGridItem(
 @Composable
 private fun MediaListItem(
   item: MediaItem,
+  imageLoader: coil3.ImageLoader,
   isSelected: Boolean,
   isSelectionMode: Boolean,
   onClick: () -> Unit,
@@ -648,18 +831,14 @@ private fun MediaListItem(
         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
       )
       AsyncImage(
-        model = ImageRequest.Builder(context)
-          .data(
-            ContentUris.withAppendedId(
-              MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-              item.id,
-            ),
-          )
+        model = coil3.request.ImageRequest.Builder(context)
+          .data(android.net.Uri.fromFile(java.io.File(item.filePath)))
           .crossfade(true)
           .build(),
+        imageLoader = imageLoader,
         contentDescription = item.displayName,
         modifier = Modifier.matchParentSize(),
-        contentScale = ContentScale.Crop,
+        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
       )
     }
     Column(modifier = Modifier.weight(1f)) {
@@ -765,5 +944,25 @@ private fun EmptyState(modifier: Modifier = Modifier) {
       style = MaterialTheme.typography.bodyMedium,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+  }
+}
+
+@Composable
+fun SelectionActionItem(
+  icon: androidx.compose.ui.graphics.vector.ImageVector,
+  label: String,
+  enabled: Boolean = true,
+  onClick: () -> Unit
+) {
+  Column(
+    modifier = Modifier
+      .clip(RoundedCornerShape(8.dp))
+      .clickable(enabled = enabled, onClick = onClick)
+      .padding(MaterialTheme.spacing.small)
+      .alpha(if (enabled) 1f else 0.38f),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    Icon(icon, contentDescription = label)
+    Text(label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp))
   }
 }

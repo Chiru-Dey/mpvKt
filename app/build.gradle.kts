@@ -152,6 +152,7 @@ dependencies {
   implementation(libs.truetype.parser)
   implementation(libs.fsaf)
   implementation(libs.coil.compose)
+  implementation(libs.coil.video)
   implementation(libs.material.kolor)
 }
 

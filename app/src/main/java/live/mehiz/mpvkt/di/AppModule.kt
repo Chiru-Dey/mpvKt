@@ -13,5 +13,5 @@ val AppModule = module {
       ignoreUnknownKeys = true
     }
   }
-  single { MediaRepository(androidContext()) }
+  single { MediaRepository(androidContext(), get()) }
 }
