@@ -84,6 +84,7 @@ import live.mehiz.mpvkt.ui.player.controls.components.ControlsButton
 import live.mehiz.mpvkt.ui.player.controls.components.MultipleSpeedPlayerUpdate
 import live.mehiz.mpvkt.ui.player.controls.components.SeekbarWithTimers
 import live.mehiz.mpvkt.ui.player.controls.components.TextPlayerUpdate
+import live.mehiz.mpvkt.ui.player.controls.components.SpeedSlider
 import live.mehiz.mpvkt.ui.player.controls.components.VolumeSlider
 import live.mehiz.mpvkt.ui.player.controls.components.sheets.toFixed
 import live.mehiz.mpvkt.ui.theme.playerRippleConfiguration
@@ -197,6 +198,7 @@ fun PlayerControls(
         val (bottomRightControls, bottomLeftControls) = createRefs()
         val playerPauseButton = createRef()
         val seekbar = createRef()
+        val speedSlider = createRef()
         val (playerUpdates) = createRefs()
 
         val isBrightnessSliderShown by viewModel.isBrightnessSliderShown.collectAsState()
@@ -292,6 +294,34 @@ fun PlayerControls(
             range = 0..viewModel.maxVolume,
             boostRange = if (boostCap > 0) 0..audioPreferences.volumeBoostCap.get() else null,
             displayAsPercentage = displayVolumeAsPercentage,
+          )
+        }
+        AnimatedVisibility(
+          controlsShown && !areControlsLocked,
+          enter = if (!reduceMotion) {
+            slideInVertically(playerControlsEnterAnimationSpec()) { it } +
+              fadeIn(playerControlsEnterAnimationSpec())
+          } else {
+            fadeIn(playerControlsEnterAnimationSpec())
+          },
+          exit = if (!reduceMotion) {
+            slideOutVertically(playerControlsExitAnimationSpec()) { it } +
+              fadeOut(playerControlsExitAnimationSpec())
+          } else {
+            fadeOut(playerControlsExitAnimationSpec())
+          },
+          modifier = Modifier.constrainAs(speedSlider) {
+            bottom.linkTo(seekbar.top, spacing.extraSmall)
+            start.linkTo(parent.start, spacing.extraLarge)
+            end.linkTo(parent.end, spacing.extraLarge)
+            width = Dimension.fillToConstraints
+          },
+        ) {
+          SpeedSlider(
+            speed = playbackSpeed ?: playerPreferences.defaultSpeed.get(),
+            onSpeedChange = {
+              MPVLib.setPropertyFloat("speed", it)
+            },
           )
         }
         val holdForMultipleSpeed by playerPreferences.holdForMultipleSpeed.collectAsState()

@@ -109,6 +109,18 @@ object PlayerPreferencesScreen : Screen {
             onValueChange = preferences.rememberBrightness::set,
             title = { Text(text = stringResource(R.string.pref_player_remember_brightness)) }
           )
+          val defaultSpeed by preferences.defaultSpeed.collectAsState()
+          SliderPreference(
+            value = defaultSpeed,
+            onValueChange = { preferences.defaultSpeed.set(it.toFixed(2)) },
+            title = { Text(text = stringResource(R.string.pref_player_default_playback_speed)) },
+            valueRange = 0.25f..3.0f,
+            summary = {
+              Text(text = "%.2f×".format(defaultSpeed))
+            },
+            onSliderValueChange = { preferences.defaultSpeed.set(it.toFixed(2)) },
+            sliderValue = defaultSpeed,
+          )
           PreferenceCategory(
             title = { Text(stringResource(R.string.pref_player_seeking_title)) }
           )

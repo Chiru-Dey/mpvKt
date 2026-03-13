@@ -149,14 +149,7 @@ fun GestureHandler(
             interactionSource.emit(PressInteraction.Release(press))
           },
           onLongPress = {
-            if (multipleSpeedGesture == 0f || areControlsLocked) return@detectTapGestures
-            if (!isLongPressing && paused == false) {
-              originalSpeed = playbackSpeed ?: return@detectTapGestures
-              haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-              isLongPressing = true
-              MPVLib.setPropertyFloat("speed", multipleSpeedGesture)
-              viewModel.playerUpdate.update { PlayerUpdates.MultipleSpeed }
-            }
+            // TODO: removed in favour of speed slider
           },
         )
       }
