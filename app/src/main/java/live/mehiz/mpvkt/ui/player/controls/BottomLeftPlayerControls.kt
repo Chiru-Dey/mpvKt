@@ -25,7 +25,7 @@ fun BottomLeftPlayerControls(
   showChapterIndicator: Boolean,
   onLockControls: () -> Unit,
   onCycleRotation: () -> Unit,
-  onPlaybackSpeedChange: (Float) -> Unit,
+  onSpeedLabelClick: () -> Unit,
   onOpenSheet: (Sheets) -> Unit,
   modifier: Modifier = Modifier
 ) {
@@ -43,7 +43,7 @@ fun BottomLeftPlayerControls(
     )
     ControlsButton(
       text = stringResource(R.string.player_speed, playbackSpeed),
-      onClick = { onPlaybackSpeedChange(if (playbackSpeed >= 2) 0.25f else playbackSpeed + 0.25f) },
+      onClick = onSpeedLabelClick,
       onLongClick = { onOpenSheet(Sheets.PlaybackSpeed) },
     )
     AnimatedVisibility(

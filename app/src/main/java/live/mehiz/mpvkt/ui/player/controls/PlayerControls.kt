@@ -84,7 +84,6 @@ import live.mehiz.mpvkt.ui.player.controls.components.ControlsButton
 import live.mehiz.mpvkt.ui.player.controls.components.MultipleSpeedPlayerUpdate
 import live.mehiz.mpvkt.ui.player.controls.components.SeekbarWithTimers
 import live.mehiz.mpvkt.ui.player.controls.components.TextPlayerUpdate
-import live.mehiz.mpvkt.ui.player.controls.components.SpeedSlider
 import live.mehiz.mpvkt.ui.player.controls.components.VolumeSlider
 import live.mehiz.mpvkt.ui.player.controls.components.sheets.toFixed
 import live.mehiz.mpvkt.ui.theme.playerRippleConfiguration
@@ -198,8 +197,8 @@ fun PlayerControls(
         val (bottomRightControls, bottomLeftControls) = createRefs()
         val playerPauseButton = createRef()
         val seekbar = createRef()
-        val speedSlider = createRef()
         val (playerUpdates) = createRefs()
+        val speedPicker = createRef()
 
         val isBrightnessSliderShown by viewModel.isBrightnessSliderShown.collectAsState()
         val isVolumeSliderShown by viewModel.isVolumeSliderShown.collectAsState()
@@ -296,32 +295,29 @@ fun PlayerControls(
             displayAsPercentage = displayVolumeAsPercentage,
           )
         }
+        var showSpeedPicker by remember { mutableStateOf(false) }
+        val currentSpeed = playbackSpeed ?: playerPreferences.defaultSpeed.get()
+        LaunchedEffect(showSpeedPicker, currentSpeed) {
+          if (showSpeedPicker) {
+            delay(3000)
+            showSpeedPicker = false
+          }
+        }
         AnimatedVisibility(
-          controlsShown && !areControlsLocked,
-          enter = if (!reduceMotion) {
-            slideInVertically(playerControlsEnterAnimationSpec()) { it } +
-              fadeIn(playerControlsEnterAnimationSpec())
-          } else {
-            fadeIn(playerControlsEnterAnimationSpec())
-          },
-          exit = if (!reduceMotion) {
-            slideOutVertically(playerControlsExitAnimationSpec()) { it } +
-              fadeOut(playerControlsExitAnimationSpec())
-          } else {
-            fadeOut(playerControlsExitAnimationSpec())
-          },
-          modifier = Modifier.constrainAs(speedSlider) {
-            bottom.linkTo(seekbar.top, spacing.extraSmall)
-            start.linkTo(parent.start, spacing.extraLarge)
-            end.linkTo(parent.end, spacing.extraLarge)
+          showSpeedPicker,
+          enter = fadeIn(playerControlsEnterAnimationSpec()),
+          exit = fadeOut(playerControlsExitAnimationSpec()),
+          modifier = Modifier.constrainAs(speedPicker) {
+            bottom.linkTo(seekbar.top, spacing.medium)
+            start.linkTo(parent.start, spacing.large)
+            end.linkTo(parent.end, spacing.large)
             width = Dimension.fillToConstraints
           },
         ) {
-          SpeedSlider(
-            speed = playbackSpeed ?: playerPreferences.defaultSpeed.get(),
-            onSpeedChange = {
-              MPVLib.setPropertyFloat("speed", it)
-            },
+          SpeedPickerPanel(
+            speed = currentSpeed,
+            onSpeedChange = { MPVLib.setPropertyFloat("speed", it) },
+            onDismiss = { showSpeedPicker = false },
           )
         }
         val holdForMultipleSpeed by playerPreferences.holdForMultipleSpeed.collectAsState()
@@ -591,10 +587,7 @@ fun PlayerControls(
             currentChapter = chapters.getOrNull(currentChapter ?: 0),
             onLockControls = viewModel::lockControls,
             onCycleRotation = viewModel::cycleScreenRotations,
-            onPlaybackSpeedChange = {
-              MPVLib.setPropertyFloat("speed", it)
-              playerPreferences.defaultSpeed.set(it)
-            },
+            onSpeedLabelClick = { showSpeedPicker = !showSpeedPicker },
             onOpenSheet = onOpenSheet,
           )
         }
