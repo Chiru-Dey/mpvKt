@@ -14,6 +14,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import live.mehiz.mpvkt.R
 import live.mehiz.mpvkt.preferences.AppearancePreferences
@@ -100,22 +101,45 @@ private val darkScheme = darkColorScheme(
 fun MpvKtTheme(content: @Composable () -> Unit) {
   val preferences = koinInject<AppearancePreferences>()
   val darkMode by preferences.darkMode.collectAsState()
-  val darkTheme = isSystemInDarkTheme()
+  val systemDarkTheme = isSystemInDarkTheme()
   val dynamicColor by preferences.materialYou.collectAsState()
+  val themeColor by preferences.themeColor.collectAsState()
   val context = LocalContext.current
 
-  val colorScheme = when {
+  val isDark = when (darkMode) {
+    DarkMode.Light -> false
+    DarkMode.Dark, DarkMode.Black -> true
+    DarkMode.System -> systemDarkTheme
+  }
+
+  val baseScheme = when {
     dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-      when (darkMode) {
-        DarkMode.Dark -> dynamicDarkColorScheme(context)
-        DarkMode.Light -> dynamicLightColorScheme(context)
-        else -> if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-      }
+      if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
     }
 
-    darkMode == DarkMode.Dark -> darkScheme
-    darkMode == DarkMode.Light -> lightScheme
-    else -> if (darkTheme) darkScheme else lightScheme
+    else -> {
+      com.materialkolor.dynamicColorScheme(
+        seedColor = Color(themeColor.seed),
+        isDark = isDark,
+        isAmoled = darkMode == DarkMode.Black,
+      )
+    }
+  }
+
+  val colorScheme = if (darkMode == DarkMode.Black) {
+    baseScheme.copy(
+      background = Color.Black,
+      surface = Color.Black,
+      surfaceVariant = Color(0xFF0A0A0A),
+      surfaceDim = Color.Black,
+      surfaceContainer = Color(0xFF050505),
+      surfaceContainerLow = Color(0xFF030303),
+      surfaceContainerLowest = Color.Black,
+      surfaceContainerHigh = Color(0xFF0A0A0A),
+      surfaceContainerHighest = Color(0xFF111111),
+    )
+  } else {
+    baseScheme
   }
 
   CompositionLocalProvider(
@@ -131,6 +155,7 @@ fun MpvKtTheme(content: @Composable () -> Unit) {
 enum class DarkMode(@StringRes val titleRes: Int) {
   Dark(R.string.pref_appearance_darkmode_dark),
   Light(R.string.pref_appearance_darkmode_light),
+  Black(R.string.pref_appearance_darkmode_black),
   System(R.string.pref_appearance_darkmode_system),
 }
 
