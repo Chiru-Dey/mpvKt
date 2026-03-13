@@ -28,7 +28,7 @@ class PlayerPreferences(
   val currentChaptersIndicator = preferenceStore.getBoolean("show_video_chapter_indicator", true)
   val showChaptersButton = preferenceStore.getBoolean("show_video_chapters_button")
 
-  val defaultSpeed = preferenceStore.getFloat("default_speed", 2f)
+  val defaultSpeed = preferenceStore.getFloat("default_speed", 1)
   val speedControlMode = preferenceStore.getEnum("speed_control_mode", SpeedControlMode.SLIDER_POPUP)
   val speedPresets = preferenceStore.getStringSet(
     "default_speed_presets",
