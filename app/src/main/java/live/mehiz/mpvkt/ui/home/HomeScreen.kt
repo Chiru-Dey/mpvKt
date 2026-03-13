@@ -1,10 +1,12 @@
 package live.mehiz.mpvkt.ui.home
 
 import android.Manifest
+import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.MediaStore
 import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -53,6 +55,9 @@ import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.AlertDialog
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -519,6 +524,20 @@ private fun MediaGridItem(
           modifier = Modifier.size(48.dp),
           tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
         )
+        AsyncImage(
+          model = ImageRequest.Builder(context)
+            .data(
+              ContentUris.withAppendedId(
+                MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                item.id,
+              ),
+            )
+            .crossfade(true)
+            .build(),
+          contentDescription = item.displayName,
+          modifier = Modifier.matchParentSize(),
+          contentScale = ContentScale.Crop,
+        )
         // Duration badge
         Box(
           Modifier
@@ -627,6 +646,20 @@ private fun MediaListItem(
         contentDescription = null,
         modifier = Modifier.size(24.dp),
         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+      )
+      AsyncImage(
+        model = ImageRequest.Builder(context)
+          .data(
+            ContentUris.withAppendedId(
+              MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+              item.id,
+            ),
+          )
+          .crossfade(true)
+          .build(),
+        contentDescription = item.displayName,
+        modifier = Modifier.matchParentSize(),
+        contentScale = ContentScale.Crop,
       )
     }
     Column(modifier = Modifier.weight(1f)) {

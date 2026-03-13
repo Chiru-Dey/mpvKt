@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import dev.vivvvek.seeker.Segment
 import live.mehiz.mpvkt.R
-import live.mehiz.mpvkt.ui.player.Sheets
+import live.mehiz.mpvkt.ui.player.SpeedControlMode
 import live.mehiz.mpvkt.ui.player.controls.components.ControlsButton
 import live.mehiz.mpvkt.ui.player.controls.components.CurrentChapter
 
@@ -23,10 +23,12 @@ fun BottomLeftPlayerControls(
   playbackSpeed: Float,
   currentChapter: Segment?,
   showChapterIndicator: Boolean,
+  speedControlMode: SpeedControlMode,
   onLockControls: () -> Unit,
   onCycleRotation: () -> Unit,
   onSpeedLabelClick: () -> Unit,
-  onOpenSheet: (Sheets) -> Unit,
+  onSpeedCycle: () -> Unit,
+  onOpenChapters: () -> Unit,
   modifier: Modifier = Modifier
 ) {
   Row(
@@ -43,8 +45,10 @@ fun BottomLeftPlayerControls(
     )
     ControlsButton(
       text = stringResource(R.string.player_speed, playbackSpeed),
-      onClick = onSpeedLabelClick,
-      onLongClick = { onOpenSheet(Sheets.PlaybackSpeed) },
+      onClick = when (speedControlMode) {
+        SpeedControlMode.SLIDER_POPUP -> onSpeedLabelClick
+        SpeedControlMode.CYCLE -> onSpeedCycle
+      },
     )
     AnimatedVisibility(
       showChapterIndicator && currentChapter != null,
@@ -53,7 +57,7 @@ fun BottomLeftPlayerControls(
     ) {
       CurrentChapter(
         chapter = currentChapter!!,
-        onClick = { onOpenSheet(Sheets.Chapters) }
+        onClick = onOpenChapters,
       )
     }
   }

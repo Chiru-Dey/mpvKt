@@ -151,6 +151,7 @@ dependencies {
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.truetype.parser)
   implementation(libs.fsaf)
+  implementation(libs.coil.compose)
 }
 
 detekt {

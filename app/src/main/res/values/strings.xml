@@ -62,6 +62,9 @@
     <string name="pref_player_close_after_eof">Close after the end of playback</string>
     <string name="pref_player_remember_brightness">Remember display brightness</string>
     <string name="pref_player_default_playback_speed">Default playback speed</string>
+    <string name="pref_player_speed_control_style">Speed control style</string>
+    <string name="pref_speed_control_mode_slider_popup">Slider popup</string>
+    <string name="pref_speed_control_mode_cycle">Cycle</string>
 
     <string name="pref_player_gestures">Gestures</string>
     <string name="pref_player_gestures_seek">Horizontal seek gestures</string>

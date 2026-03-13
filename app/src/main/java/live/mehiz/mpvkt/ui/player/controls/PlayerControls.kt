@@ -78,6 +78,7 @@ import live.mehiz.mpvkt.ui.player.PlayerActivity
 import live.mehiz.mpvkt.ui.player.PlayerUpdates
 import live.mehiz.mpvkt.ui.player.PlayerViewModel
 import live.mehiz.mpvkt.ui.player.Sheets
+import live.mehiz.mpvkt.ui.player.SpeedControlMode
 import live.mehiz.mpvkt.ui.player.VideoAspect
 import live.mehiz.mpvkt.ui.player.controls.components.BrightnessSlider
 import live.mehiz.mpvkt.ui.player.controls.components.ControlsButton
@@ -581,14 +582,22 @@ fun PlayerControls(
           },
         ) {
           val showChapterIndicator by playerPreferences.currentChaptersIndicator.collectAsState()
+          val speedControlMode by playerPreferences.speedControlMode.collectAsState()
+          val currentSpeedForCycle = playbackSpeed ?: playerPreferences.defaultSpeed.get()
           BottomLeftPlayerControls(
-            playbackSpeed = playbackSpeed ?: playerPreferences.defaultSpeed.get(),
+            playbackSpeed = currentSpeedForCycle,
             showChapterIndicator = showChapterIndicator,
             currentChapter = chapters.getOrNull(currentChapter ?: 0),
+            speedControlMode = speedControlMode,
             onLockControls = viewModel::lockControls,
             onCycleRotation = viewModel::cycleScreenRotations,
             onSpeedLabelClick = { showSpeedPicker = !showSpeedPicker },
-            onOpenSheet = onOpenSheet,
+            onSpeedCycle = {
+              val newSpeed = if (currentSpeedForCycle >= 3f) 0.25f else currentSpeedForCycle + 0.25f
+              MPVLib.setPropertyFloat("speed", newSpeed)
+              playerPreferences.defaultSpeed.set(newSpeed)
+            },
+            onOpenChapters = { onOpenSheet(Sheets.Chapters) },
           )
         }
       }

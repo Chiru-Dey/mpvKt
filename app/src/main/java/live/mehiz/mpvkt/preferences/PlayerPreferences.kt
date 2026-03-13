@@ -3,6 +3,7 @@ package live.mehiz.mpvkt.preferences
 import live.mehiz.mpvkt.preferences.preference.PreferenceStore
 import live.mehiz.mpvkt.preferences.preference.getEnum
 import live.mehiz.mpvkt.ui.player.PlayerOrientation
+import live.mehiz.mpvkt.ui.player.SpeedControlMode
 import live.mehiz.mpvkt.ui.player.VideoAspect
 
 class PlayerPreferences(
@@ -28,6 +29,7 @@ class PlayerPreferences(
   val showChaptersButton = preferenceStore.getBoolean("show_video_chapters_button")
 
   val defaultSpeed = preferenceStore.getFloat("default_speed", 2f)
+  val speedControlMode = preferenceStore.getEnum("speed_control_mode", SpeedControlMode.SLIDER_POPUP)
   val speedPresets = preferenceStore.getStringSet(
     "default_speed_presets",
     setOf("0.25", "0.5", "0.75", "1.0", "1.25", "1.5", "1.75", "2.0", "2.5", "3.0", "3.5", "4.0")

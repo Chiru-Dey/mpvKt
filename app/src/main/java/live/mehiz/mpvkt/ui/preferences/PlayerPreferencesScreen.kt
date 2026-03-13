@@ -2,7 +2,9 @@ package live.mehiz.mpvkt.ui.preferences
 
 import android.content.pm.PackageManager
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,21 +13,30 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.unit.dp
 import kotlinx.serialization.Serializable
 import live.mehiz.mpvkt.R
 import live.mehiz.mpvkt.preferences.PlayerPreferences
 import live.mehiz.mpvkt.preferences.preference.collectAsState
 import live.mehiz.mpvkt.presentation.Screen
 import live.mehiz.mpvkt.ui.player.PlayerOrientation
+import live.mehiz.mpvkt.ui.player.SpeedControlMode
 import live.mehiz.mpvkt.ui.player.controls.components.sheets.toFixed
 import live.mehiz.mpvkt.ui.utils.LocalBackStack
 import me.zhanghai.compose.preference.ListPreference
@@ -34,6 +45,7 @@ import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SliderPreference
 import me.zhanghai.compose.preference.SwitchPreference
 import org.koin.compose.koinInject
+import kotlin.math.roundToInt
 
 @Serializable
 object PlayerPreferencesScreen : Screen {
@@ -110,16 +122,41 @@ object PlayerPreferencesScreen : Screen {
             title = { Text(text = stringResource(R.string.pref_player_remember_brightness)) }
           )
           val defaultSpeed by preferences.defaultSpeed.collectAsState()
-          SliderPreference(
-            value = defaultSpeed,
-            onValueChange = { preferences.defaultSpeed.set(it.toFixed(2)) },
-            title = { Text(text = stringResource(R.string.pref_player_default_playback_speed)) },
-            valueRange = 0.25f..3.0f,
-            summary = {
-              Text(text = "%.2f×".format(defaultSpeed))
-            },
-            onSliderValueChange = { preferences.defaultSpeed.set(it.toFixed(2)) },
-            sliderValue = defaultSpeed,
+          var sliderPosition by remember { mutableFloatStateOf(defaultSpeed) }
+          LaunchedEffect(defaultSpeed) { sliderPosition = defaultSpeed }
+          Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Text(
+                text = stringResource(R.string.pref_player_default_playback_speed),
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge,
+              )
+              Text(
+                text = "%.2f×".format(sliderPosition),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+              )
+            }
+            Slider(
+              value = sliderPosition,
+              onValueChange = { sliderPosition = ((it * 20).roundToInt() / 20f) },
+              onValueChangeFinished = { preferences.defaultSpeed.set(sliderPosition) },
+              valueRange = 0.25f..3.0f,
+              steps = 54,
+              modifier = Modifier.fillMaxWidth(),
+            )
+          }
+          val speedControlMode by preferences.speedControlMode.collectAsState()
+          ListPreference(
+            value = speedControlMode,
+            onValueChange = preferences.speedControlMode::set,
+            values = SpeedControlMode.entries,
+            valueToText = { AnnotatedString(context.getString(it.titleRes)) },
+            title = { Text(text = stringResource(R.string.pref_player_speed_control_style)) },
+            summary = { Text(text = stringResource(speedControlMode.titleRes)) },
           )
           PreferenceCategory(
             title = { Text(stringResource(R.string.pref_player_seeking_title)) }

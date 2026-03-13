@@ -22,6 +22,11 @@ enum class VideoAspect(@StringRes val titleRes: Int) {
   Stretch(R.string.player_aspect_stretch),
 }
 
+enum class SpeedControlMode(@StringRes val titleRes: Int) {
+  SLIDER_POPUP(R.string.pref_speed_control_mode_slider_popup),
+  CYCLE(R.string.pref_speed_control_mode_cycle),
+}
+
 enum class SingleActionGesture(@StringRes val titleRes: Int) {
   None(R.string.pref_gesture_double_tap_none),
   Seek(R.string.pref_gesture_double_tap_seek),
