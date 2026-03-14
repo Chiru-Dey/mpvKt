@@ -1,5 +1,6 @@
 package live.mehiz.mpvkt.ui.home
 
+import androidx.compose.ui.graphics.asImageBitmap
 import android.Manifest
 import android.content.ContentUris
 import android.content.Context
@@ -154,36 +155,17 @@ private fun getVideoPermission(): String {
   }
 }
 
+
 @Serializable
 object HomeScreen : Screen {
   @OptIn(ExperimentalMaterial3Api::class)
   @Composable
   override fun Content() {
+    android.util.Log.d("VThumb", ">>> Content() is running <<<")
     val context = android.content.ContextWrapper(androidx.compose.ui.platform.LocalContext.current)
     val backstack = LocalBackStack.current
     val viewModel = koinViewModel<HomeViewModel>()
-    
-    val imageLoader = androidx.compose.runtime.remember {
-      coil3.ImageLoader.Builder(context)
-        .components {
-          add(VideoThumbnailFetcher.Factory())
-          add(coil3.video.VideoFrameDecoder.Factory())
-        }
-        .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
-        .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
-        .memoryCache {
-          coil3.memory.MemoryCache.Builder()
-            .maxSizePercent(context, 0.25)
-            .build()
-        }
-        .diskCache {
-          coil3.disk.DiskCache.Builder()
-            .directory(context.cacheDir.resolve("video_thumbs").toOkioPath())
-            .maxSizePercent(0.02)
-            .build()
-        }
-        .build()
-    }
+
     val mediaItems by viewModel.mediaItems.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -470,7 +452,6 @@ object HomeScreen : Screen {
             items(mediaItems, key = { it.id }, contentType = { "media_item" }) { item ->
               MediaGridItem(
                 item = item,
-                imageLoader = imageLoader,
                 isSelected = selectedItems.contains(item.id),
                 isSelectionMode = isSelectionMode,
                 onClick = {
@@ -495,7 +476,6 @@ object HomeScreen : Screen {
             items(mediaItems, key = { it.id }, contentType = { "media_item" }) { item ->
               MediaListItem(
                 item = item,
-                imageLoader = imageLoader,
                 isSelected = selectedItems.contains(item.id),
                 isSelectionMode = isSelectionMode,
                 onClick = {
@@ -696,7 +676,6 @@ private fun UrlInputDialog(
 @Composable
 private fun MediaGridItem(
   item: MediaItem,
-  imageLoader: coil3.ImageLoader,
   isSelected: Boolean,
   isSelectionMode: Boolean,
   onClick: () -> Unit,
@@ -733,22 +712,12 @@ private fun MediaGridItem(
           modifier = Modifier.size(48.dp),
           tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
         )
-        AsyncImage(
-          model = coil3.request.ImageRequest.Builder(context)
-            .data(ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, item.id))
-            .memoryCacheKey("vthumb_${item.id}")
-            .diskCacheKey("vthumb_${item.id}")
-            .size(320, 240)
-            .scale(coil3.size.Scale.FILL)
-            .crossfade(true)
-            .build(),
-          imageLoader = imageLoader,
-          contentDescription = item.displayName,
-          modifier = Modifier.matchParentSize(),
-          contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-          error = painterResource(R.drawable.ic_launcher_foreground),
-          placeholder = painterResource(R.drawable.ic_launcher_foreground)
-        )
+        VideoThumbnail(
+          mediaId = item.id,
+          context = context,
+          modifier = Modifier.matchParentSize()
+      )
+
         // Duration badge
         Box(
           Modifier
@@ -820,7 +789,6 @@ private fun MediaGridItem(
 @Composable
 private fun MediaListItem(
   item: MediaItem,
-  imageLoader: coil3.ImageLoader,
   isSelected: Boolean,
   isSelectionMode: Boolean,
   onClick: () -> Unit,
@@ -859,21 +827,10 @@ private fun MediaListItem(
         modifier = Modifier.size(24.dp),
         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
       )
-      AsyncImage(
-        model = coil3.request.ImageRequest.Builder(context)
-          .data(ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, item.id))
-          .memoryCacheKey("vthumb_${item.id}")
-          .diskCacheKey("vthumb_${item.id}")
-          .size(320, 240)
-          .scale(coil3.size.Scale.FILL)
-          .crossfade(true)
-          .build(),
-        imageLoader = imageLoader,
-        contentDescription = item.displayName,
-        modifier = Modifier.matchParentSize(),
-        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-        error = painterResource(R.drawable.ic_launcher_foreground),
-        placeholder = painterResource(R.drawable.ic_launcher_foreground)
+      VideoThumbnail(
+          mediaId = item.id,
+          context = context,
+          modifier = Modifier.matchParentSize()
       )
     }
     Column(modifier = Modifier.weight(1f)) {
@@ -982,73 +939,50 @@ private fun EmptyState(modifier: Modifier = Modifier) {
   }
 }
 
-class VideoThumbnailFetcher(
-  private val data: android.net.Uri,
-  private val options: coil3.request.Options
-) : coil3.fetch.Fetcher {
-
-  override suspend fun fetch(): coil3.fetch.FetchResult? {
-    val mediaId = android.content.ContentUris.parseId(data)
-    val context = options.context
-
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-      try {
-        val bmp = context.contentResolver.loadThumbnail(
-          data,
-          android.util.Size(512, 384),
-          null
-        )
-        return coil3.fetch.ImageFetchResult(
-          image = bmp.asImage(),
-          isSampled = true,
-          dataSource = coil3.decode.DataSource.DISK
-        )
-      } catch (_: Exception) { /* fall through */ }
-    } else {
-      @Suppress("DEPRECATION")
-      val bmp = android.provider.MediaStore.Video.Thumbnails.getThumbnail(
-        context.contentResolver,
-        mediaId,
-        android.provider.MediaStore.Video.Thumbnails.MINI_KIND,
-        null
-      )
-      if (bmp != null) {
-        return coil3.fetch.ImageFetchResult(
-          image = bmp.asImage(),
-          isSampled = true,
-          dataSource = coil3.decode.DataSource.DISK
-        )
-      }
+@Composable
+fun VideoThumbnail(
+    mediaId: Long,
+    context: Context,
+    modifier: Modifier = Modifier
+) {
+    var bitmap by remember(mediaId) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    LaunchedEffect(mediaId) {
+        if (bitmap != null) return@LaunchedEffect
+        bitmap = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val uri = ContentUris.withAppendedId(
+                    MediaStore.Video.Media.EXTERNAL_CONTENT_URI, mediaId
+                )
+                val retriever = android.media.MediaMetadataRetriever()
+                retriever.setDataSource(context, uri)
+                val durationMs = retriever.extractMetadata(
+                    android.media.MediaMetadataRetriever.METADATA_KEY_DURATION
+                )?.toLongOrNull() ?: 0L
+                android.util.Log.d("VThumb", "mediaId=$mediaId durationMs=$durationMs")
+                val seekUs = if (durationMs > 0) (durationMs * 1000L * 0.1).toLong() else 10_000_000L
+                val bmp = retriever.getFrameAtTime(
+                    seekUs, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+                )
+                retriever.release()
+                android.util.Log.d("VThumb", "mediaId=$mediaId bmp=${bmp?.width}x${bmp?.height}")
+                bmp
+            } catch (e: Exception) {
+                android.util.Log.e("VThumb", "error for mediaId=$mediaId", e)
+                null
+            }
+        }
     }
-
-    val afd = context.contentResolver.openAssetFileDescriptor(data, "r")
-      ?: throw java.io.IOException("Cannot open: $data")
-    
-    val source = afd.createInputStream().source().buffer()
-    val imageSource = coil3.decode.ImageSource(
-      source = source,
-      fileSystem = okio.FileSystem.SYSTEM
-    )
-    return coil3.fetch.SourceFetchResult(
-      source = imageSource,
-      mimeType = context.contentResolver.getType(data),
-      dataSource = coil3.decode.DataSource.DISK
-    )
-  }
-
-  class Factory : coil3.fetch.Fetcher.Factory<android.net.Uri> {
-    override fun create(
-      data: android.net.Uri, 
-      options: coil3.request.Options, 
-      imageLoader: coil3.ImageLoader
-    ): coil3.fetch.Fetcher? {
-      if (!data.toString().startsWith(
-        android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI.toString()
-      )) return null
-      return VideoThumbnailFetcher(data, options)
+    if (bitmap != null) {
+        androidx.compose.foundation.Image(
+            bitmap = bitmap!!.asImageBitmap(),
+            contentDescription = null,
+            modifier = modifier,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+        )
     }
-  }
 }
+
+
 
 @Composable
 fun SelectionActionItem(
