@@ -134,27 +134,20 @@ private fun formatDuration(ms: Long): String {
 }
 
 private fun hasVideoPermission(context: Context): Boolean {
-  return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-    ContextCompat.checkSelfPermission(
-      context,
-      Manifest.permission.READ_MEDIA_VIDEO,
-    ) == PackageManager.PERMISSION_GRANTED
-  } else {
-    ContextCompat.checkSelfPermission(
-      context,
-      Manifest.permission.READ_EXTERNAL_STORAGE,
-    ) == PackageManager.PERMISSION_GRANTED
-  }
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_VIDEO) == PackageManager.PERMISSION_GRANTED
+    } else {
+        ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+    }
 }
 
-private fun getVideoPermission(): String {
-  return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-    Manifest.permission.READ_MEDIA_VIDEO
-  } else {
-    Manifest.permission.READ_EXTERNAL_STORAGE
-  }
+private fun getVideoPermission(): Array<String> {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        arrayOf(Manifest.permission.READ_MEDIA_VIDEO, Manifest.permission.READ_MEDIA_IMAGES)
+    } else {
+        arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+    }
 }
-
 
 @Serializable
 object HomeScreen : Screen {
@@ -186,13 +179,19 @@ object HomeScreen : Screen {
 
     val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
-
+    
     val permissionLauncher = rememberLauncherForActivityResult(
-      ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-      hasPermission = granted
-      if (granted) viewModel.loadMedia()
+    ActivityResultContracts.RequestMultiplePermissions(),
+) { permissions ->
+    val granted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        permissions[Manifest.permission.READ_MEDIA_VIDEO] == true
+    } else {
+        permissions[Manifest.permission.READ_EXTERNAL_STORAGE] == true
     }
+    hasPermission = granted
+    if (granted) viewModel.loadMedia()
+}
+
 
     LaunchedEffect(Unit) {
       if (hasPermission) viewModel.loadMedia()
