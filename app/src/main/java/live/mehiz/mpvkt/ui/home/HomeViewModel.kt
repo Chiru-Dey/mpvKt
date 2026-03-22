@@ -41,14 +41,16 @@ class HomeViewModel(
   val sortOption = preferenceStore.getEnum("home_sort_option", SortOption.TITLE)
   val sortAscending = preferenceStore.getBoolean("home_sort_ascending", true)
 
-  private val _isGridView = MutableStateFlow(true)
-  val isGridView = _isGridView.asStateFlow()
+  val isGridView = preferenceStore.getBoolean("home_grid_view", false)
 
   private val _selectedItems = MutableStateFlow<Set<Long>>(emptySet())
   val selectedItems = _selectedItems.asStateFlow()
 
   private val _isLoading = MutableStateFlow(true)
   val isLoading = _isLoading.asStateFlow()
+
+  private val _isRefreshing = MutableStateFlow(false)
+  val isRefreshing = _isRefreshing.asStateFlow()
 
   val mediaItems = combine(
     _allMedia,
@@ -96,6 +98,14 @@ class HomeViewModel(
     }
   }
 
+  fun refresh() {
+    viewModelScope.launch {
+      _isRefreshing.update { true }
+      _allMedia.update { mediaRepository.getVideos() }
+      _isRefreshing.update { false }
+    }
+  }
+
   fun setSearchQuery(query: String) {
     _searchQuery.update { query }
   }
@@ -115,7 +125,7 @@ class HomeViewModel(
   }
 
   fun toggleGridView() {
-    _isGridView.update { !it }
+    isGridView.set(!isGridView.get())
   }
 
   fun toggleSelection(id: Long) {

@@ -174,6 +174,7 @@ object HomeScreen : Screen {
     val isGridView by viewModel.isGridView.collectAsState()
     val selectedItems by viewModel.selectedItems.collectAsState()
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
 
     var hasPermission by remember { mutableStateOf(hasVideoPermission(context)) }
     var showUrlDialog by remember { mutableStateOf(false) }
@@ -439,55 +440,59 @@ object HomeScreen : Screen {
             .padding(padding),
         )
       } else {
-        if (isGridView) {
-          LazyVerticalGrid(
-            state = gridState,
-            columns = GridCells.Adaptive(160.dp),
-            modifier = Modifier
-              .fillMaxSize()
-              .padding(padding),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
-          ) {
-            items(mediaItems, key = { it.id }, contentType = { "media_item" }) { item ->
-              MediaGridItem(
-                item = item,
-                isSelected = selectedItems.contains(item.id),
-                isSelectionMode = isSelectionMode,
-                onClick = {
-                  if (isSelectionMode) {
-                    viewModel.toggleSelection(item.id)
-                  } else {
-                    viewModel.updateLastPlayed(item.id)
-                    playFile(item.uri.toString(), context)
-                  }
-                },
-                onLongClick = { viewModel.toggleSelection(item.id) },
-              )
+        androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+          isRefreshing = isRefreshing,
+          onRefresh = { viewModel.refresh() },
+          modifier = Modifier
+            .fillMaxSize()
+            .padding(padding),
+        ) {
+          if (isGridView) {
+            LazyVerticalGrid(
+              state = gridState,
+              columns = GridCells.Adaptive(160.dp),
+              modifier = Modifier.fillMaxSize(),
+              horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+              verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+            ) {
+              items(mediaItems, key = { it.id }, contentType = { "media_item" }) { item ->
+                MediaGridItem(
+                  item = item,
+                  isSelected = selectedItems.contains(item.id),
+                  isSelectionMode = isSelectionMode,
+                  onClick = {
+                    if (isSelectionMode) {
+                      viewModel.toggleSelection(item.id)
+                    } else {
+                      viewModel.updateLastPlayed(item.id)
+                      playFile(item.uri.toString(), context)
+                    }
+                  },
+                  onLongClick = { viewModel.toggleSelection(item.id) },
+                )
+              }
             }
-          }
-        } else {
-          LazyColumn(
-            state = listState,
-            modifier = Modifier
-              .fillMaxSize()
-              .padding(padding),
-          ) {
-            items(mediaItems, key = { it.id }, contentType = { "media_item" }) { item ->
-              MediaListItem(
-                item = item,
-                isSelected = selectedItems.contains(item.id),
-                isSelectionMode = isSelectionMode,
-                onClick = {
-                  if (isSelectionMode) {
-                    viewModel.toggleSelection(item.id)
-                  } else {
-                    viewModel.updateLastPlayed(item.id)
-                    playFile(item.uri.toString(), context)
-                  }
-                },
-                onLongClick = { viewModel.toggleSelection(item.id) },
-              )
+          } else {
+            LazyColumn(
+              state = listState,
+              modifier = Modifier.fillMaxSize(),
+            ) {
+              items(mediaItems, key = { it.id }, contentType = { "media_item" }) { item ->
+                MediaListItem(
+                  item = item,
+                  isSelected = selectedItems.contains(item.id),
+                  isSelectionMode = isSelectionMode,
+                  onClick = {
+                    if (isSelectionMode) {
+                      viewModel.toggleSelection(item.id)
+                    } else {
+                      viewModel.updateLastPlayed(item.id)
+                      playFile(item.uri.toString(), context)
+                    }
+                  },
+                  onLongClick = { viewModel.toggleSelection(item.id) },
+                )
+              }
             }
           }
         }
@@ -939,32 +944,70 @@ private fun EmptyState(modifier: Modifier = Modifier) {
   }
 }
 
+private val thumbnailCache = object : android.util.LruCache<Long, android.graphics.Bitmap>(
+    (Runtime.getRuntime().maxMemory() / 8).toInt()
+) {
+    override fun sizeOf(key: Long, value: android.graphics.Bitmap) = value.byteCount
+}
+
 @Composable
 fun VideoThumbnail(
     mediaId: Long,
     context: Context,
     modifier: Modifier = Modifier
 ) {
-    var bitmap by remember(mediaId) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var bitmap by remember(mediaId) { mutableStateOf(thumbnailCache[mediaId]) }
+
     LaunchedEffect(mediaId) {
         if (bitmap != null) return@LaunchedEffect
         bitmap = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            thumbnailCache[mediaId]?.let { return@withContext it }
             try {
                 val uri = ContentUris.withAppendedId(
                     MediaStore.Video.Media.EXTERNAL_CONTENT_URI, mediaId
                 )
+
+                // Resolve file path via DATA column
+                val filePath = context.contentResolver.query(
+                    uri,
+                    arrayOf(MediaStore.Video.Media.DATA),
+                    null, null, null
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getString(0) else null
+                }
+                android.util.Log.d("VThumb", "mediaId=$mediaId filePath=$filePath")
+
+                // PATH 1: Sidecar image
+                if (filePath != null) {
+                    val videoFile = java.io.File(filePath)
+                    val baseName = videoFile.nameWithoutExtension
+                    val parentDir = videoFile.parentFile
+                    android.util.Log.d("VThumb", "mediaId=$mediaId checking sidecar in ${parentDir?.absolutePath} for base=$baseName")
+                    for (ext in listOf("jpg", "jpeg", "png", "webp")) {
+                        val sidecar = java.io.File(parentDir, "$baseName.$ext")
+                        android.util.Log.d("VThumb", "mediaId=$mediaId sidecar check: ${sidecar.absolutePath} exists=${sidecar.exists()}")
+                        if (sidecar.exists()) {
+                            val bmp = android.graphics.BitmapFactory.decodeFile(sidecar.absolutePath)
+                            if (bmp != null) {
+                                android.util.Log.d("VThumb", "mediaId=$mediaId SIDECAR HIT ${sidecar.name}")
+                                thumbnailCache.put(mediaId, bmp)
+                                return@withContext bmp
+                            }
+                        }
+                    }
+                }
+
+                // PATH 2: Frame extraction
                 val retriever = android.media.MediaMetadataRetriever()
-                retriever.setDataSource(context, uri)
+                if (filePath != null) retriever.setDataSource(filePath)
+                else retriever.setDataSource(context, uri)
                 val durationMs = retriever.extractMetadata(
                     android.media.MediaMetadataRetriever.METADATA_KEY_DURATION
                 )?.toLongOrNull() ?: 0L
-                android.util.Log.d("VThumb", "mediaId=$mediaId durationMs=$durationMs")
                 val seekUs = if (durationMs > 0) (durationMs * 1000L * 0.1).toLong() else 10_000_000L
-                val bmp = retriever.getFrameAtTime(
-                    seekUs, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC
-                )
+                val bmp = retriever.getFrameAtTime(seekUs, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
                 retriever.release()
-                android.util.Log.d("VThumb", "mediaId=$mediaId bmp=${bmp?.width}x${bmp?.height}")
+                if (bmp != null) thumbnailCache.put(mediaId, bmp)
                 bmp
             } catch (e: Exception) {
                 android.util.Log.e("VThumb", "error for mediaId=$mediaId", e)
@@ -972,6 +1015,7 @@ fun VideoThumbnail(
             }
         }
     }
+
     if (bitmap != null) {
         androidx.compose.foundation.Image(
             bitmap = bitmap!!.asImageBitmap(),
