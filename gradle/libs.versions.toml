@@ -59,6 +59,7 @@ fsaf = { module = "com.github.K1rakishou:Fuck-Storage-Access-Framework", version
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version = "3.4.0" }
 coil-video = { module = "io.coil-kt.coil3:coil-video", version = "3.4.0" }
 material-kolor = { module = "com.materialkolor:material-kolor", version = "2.0.0" }
+accompanist-swiperefresh = { module = "com.google.accompanist:accompanist-swiperefresh", version = "0.36.0" }
 
 about-libs-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "about-libs" }
 about-libs-ui-m3 = { module = "com.mikepenz:aboutlibraries-compose-m3", version.ref = "about-libs" }

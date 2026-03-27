@@ -3,6 +3,10 @@ package live.mehiz.mpvkt.ui.home
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
@@ -10,6 +14,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import live.mehiz.mpvkt.R
 import live.mehiz.mpvkt.domain.mediabrowser.MediaItem
 import live.mehiz.mpvkt.domain.mediabrowser.MediaRepository
@@ -100,9 +105,19 @@ class HomeViewModel(
 
   fun refresh() {
     viewModelScope.launch {
-      _isRefreshing.update { true }
-      _allMedia.update { mediaRepository.getVideos() }
-      _isRefreshing.update { false }
+      _isRefreshing.value = true
+      yield()
+      coroutineScope {
+        val videosDeferred = async(Dispatchers.IO) {
+          mediaRepository.getVideos()
+        }
+        val minDelayDeferred = async {
+          delay(600)
+        }
+        _allMedia.value = videosDeferred.await()
+        minDelayDeferred.await()
+      }
+      _isRefreshing.value = false
     }
   }
 

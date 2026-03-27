@@ -439,8 +439,9 @@ object HomeScreen : Screen {
             .padding(padding),
         )
       } else {
-        androidx.compose.material3.pulltorefresh.PullToRefreshBox(
-          isRefreshing = isRefreshing,
+        val swipeRefreshState = com.google.accompanist.swiperefresh.rememberSwipeRefreshState(isRefreshing)
+        com.google.accompanist.swiperefresh.SwipeRefresh(
+          state = swipeRefreshState,
           onRefresh = { viewModel.refresh() },
           modifier = Modifier
             .fillMaxSize()

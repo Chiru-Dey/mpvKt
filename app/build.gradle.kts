@@ -154,6 +154,7 @@ dependencies {
   implementation(libs.coil.compose)
   implementation(libs.coil.video)
   implementation(libs.material.kolor)
+  implementation(libs.accompanist.swiperefresh)
 }
 
 detekt {
